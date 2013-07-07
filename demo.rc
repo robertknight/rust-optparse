@@ -1,0 +1,44 @@
+use std::os;
+use optparse::*;
+
+mod optparse;
+
+fn main() {
+	let simple_opt = Opt::new("-o", "--opt", "A simple option");
+	let opt_with_arg = Opt::new("-a", "--opt-with-arg [arg]", "An option taking an argument");
+	let long_opt = Opt::new("", "--long-opt", "An option with no short variant");
+
+	let opt_parser = OptionParser {
+		usage : ~"[values to print]",
+		banner : ~"This is a test app for the OptionParser struct \
+		           with a banner that exceeds 80 chars in length",
+		opts : ~[&simple_opt, &opt_with_arg, &long_opt]
+	};
+	let flags = opt_parser.parse(os::args());
+
+	match flags.status {
+		Help => return,
+		Error => {
+			os::set_exit_status(1);
+			return
+		},
+		_ => ()
+	}
+
+	if opt_parser.is_set(&flags, &simple_opt) {
+		println("An option with no args was used");
+	}
+
+	do opt_parser.with_value(&flags, &opt_with_arg) |val| {
+		println(fmt!("An option with arg %s was used", val));
+	}
+
+	match opt_parser.value(&flags, &opt_with_arg) {
+		Some(v) => println(fmt!("Got option %s", v)),
+		None => ()
+	}
+
+	for flags.args.iter().enumerate().advance |(i,arg)| {
+		println(fmt!("Non-option argument #%u: %s", i, *arg));
+	}
+}
