@@ -21,11 +21,15 @@ pub struct OptionParser<'self> {
 	/// A one line usage summary to be displayed by -h.
 	/// The output format is '<program name> <usage>'
 	usage: ~str,
-	/// A short description of what the command does,
+	/// A short summary of what the command does,
 	/// displayed underneath the 'usage' string by -h
+	/// and before the list of options
 	banner: ~str,
 	/// Vector of accepted option flags
-	opts: ~[&'self Opt]
+	opts: ~[&'self Opt],
+	/// A banner that is displayed below the list
+	/// of options
+	tail_banner : Option<~str>
 }
 
 struct OptMatch {
@@ -279,7 +283,16 @@ impl <'self> OptionParser<'self> {
 		let opt_section : &str = opt_list.map(|entry| {
 			entry.help_str.clone()
 		}).connect("\n");
-		let sections = [usage_str, banner, opt_section];
+		let mut sections = ~[usage_str, banner, opt_section];
+
+		match self.tail_banner {
+			Some(ref _tail) => {
+				let tail : &str = *_tail;
+				sections.push(tail)
+			}
+			None() => ()
+		}
+
 		sections.connect("\n\n").append("\n")
 	}
 
