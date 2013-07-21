@@ -11,9 +11,7 @@ pub struct Opt {
 	/// one or more letters
 	long: ~str,
 	/// A brief description of the option
-	description: ~str,
-	/// True if this option takes an argument
-	has_arg : bool
+	description: ~str
 }
 
 /// Parser for processing command-line arguments and displaying
@@ -115,8 +113,7 @@ impl Opt {
 		Opt {
 			short : short.to_owned(),
 			long : long.to_owned(),
-			description : description.to_owned(),
-			has_arg : long.contains("[")
+			description : description.to_owned()
 		}
 	}
 
@@ -125,9 +122,18 @@ impl Opt {
 		Opt {
 			short : ~"-h",
 			long : ~"--help",
-			description : ~"Print usage information",
-			has_arg : false
+			description : ~"Print usage information"
 		}
+	}
+
+	/// Returns true if this option takes an argument
+	pub fn has_arg(&self) -> bool {
+		self.long.contains(" ")
+	}
+
+	/// Returns true if this option takes a mandatory argument
+	pub fn has_required_arg(&self) -> bool {
+		self.has_arg() && !self.long.contains("[")
 	}
 }
 
@@ -174,22 +180,26 @@ impl <'self> OptionParser<'self> {
 				match matching_opt {
 					Some(opt) => {
 						let has_arg =
-						  opt.has_arg &&
+						  opt.has_arg() &&
 						  index < args.len()-1 &&
 						  (arg.starts_with("--") || arg.len() == 2);
-						let opt_match = if has_arg {
+						if has_arg {
 							skip_next_arg = true;
-							OptMatch {
+							result.opts.push(OptMatch {
 								opt_name : opt.long_parsed().to_owned(),
 								val : args[index+1].clone()
-							}
+							});
 						} else {
-							OptMatch {
-								opt_name : opt.long_parsed().to_owned(),
-								val : ~""
+							if opt.has_required_arg() {
+								println(fmt!("Missing required argument for option %s", opt_arg));
+								result.status = Error;
+							} else {
+								result.opts.push(OptMatch {
+									opt_name : opt.long_parsed().to_owned(),
+									val : ~""
+								});
 							}
 						};
-						result.opts.push(opt_match);
 					},
 					None => {
 						let help_opt = Opt::help_opt();

@@ -5,14 +5,16 @@ mod optparse;
 
 fn main() {
 	let simple_opt = Opt::new("-o", "--opt", "A simple option");
-	let opt_with_arg = Opt::new("-a", "--opt-with-arg [arg]", "An option taking an argument");
+	let opt_with_opt_arg = Opt::new("-a", "--opt-with-arg [arg]", "An option taking an optional argument");
+	let opt_with_req_arg = Opt::new("-r", "--required-arg arg", "An option taking a required argument");
 	let long_opt = Opt::new("", "--long-opt", "An option with no short variant");
+	let int_arg = Opt::new("-i", "--int-arg [arg]", "Option that takes an int arg");
 
 	let opt_parser = OptionParser {
-		usage : ~"[values to print]",
+		usage : ~"[<values to print>...]",
 		banner : ~"This is a test app for the OptionParser struct \
 		           with a banner that exceeds 80 chars in length",
-		opts : ~[&simple_opt, &opt_with_arg, &long_opt]
+		opts : ~[&simple_opt, &opt_with_opt_arg, &long_opt, &int_arg, &opt_with_req_arg]
 	};
 	let flags = opt_parser.parse(os::args());
 
@@ -29,13 +31,26 @@ fn main() {
 		println("An option with no args was used");
 	}
 
-	do opt_parser.with_value(&flags, &opt_with_arg) |val| {
-		println(fmt!("An option with arg %s was used", val));
+	do opt_parser.with_value(&flags, &opt_with_opt_arg) |val| {
+		println(fmt!("An option with optional arg %s was used", val));
 	}
 
-	match opt_parser.value(&flags, &opt_with_arg) {
+	do opt_parser.with_value(&flags, &opt_with_req_arg) |val| {
+		println(fmt!("An option with required arg %s was used", val));
+	}
+
+	match opt_parser.value(&flags, &opt_with_opt_arg) {
 		Some(v) => println(fmt!("Got option %s", v)),
 		None => ()
+	}
+
+	do opt_parser.with_value(&flags, &int_arg) |val| {
+		match std::int::from_str(val) {
+			Some(int_val) =>
+				println(fmt!("Int option %d was used", int_val)),
+			None =>
+				println(fmt!("%s expects a number", int_arg.long))
+		}
 	}
 
 	for flags.args.iter().enumerate().advance |(i,arg)| {
