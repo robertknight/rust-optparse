@@ -169,6 +169,7 @@ impl <'self> OptionParser<'self> {
 			args : ~[]
 		};
 
+		let mut had_error = false;
 		let mut skip_next_arg = false;
 		for args.iter().enumerate().advance |(index, arg)| {
 			if skip_next_arg {
@@ -196,8 +197,10 @@ impl <'self> OptionParser<'self> {
 							});
 						} else {
 							if opt.has_required_arg() {
-								println(fmt!("Missing required argument for option %s.\n\n%s\n", opt_arg, OptionParser::arg_help_str(*opt)));
-								result.status = Error;
+								if !had_error {
+									println(fmt!("Missing required argument for option %s.\n\n%s\n", opt_arg, OptionParser::arg_help_str(*opt)));
+									had_error = true;
+								}
 							} else {
 								result.opts.push(OptMatch {
 									opt_name : opt.long_parsed().to_owned(),
@@ -212,18 +215,20 @@ impl <'self> OptionParser<'self> {
 							self.print_usage();
 							result.status = Help;
 						} else {
-							match self.suggest_opt(*arg) {
-								Some(opt) => {
-									println(fmt!("Unknown option %s, did you mean '%s'?\n\n%s\n",
-									  opt_arg,
-									  opt.long_parsed(),
-									  OptionParser::arg_help_str(opt)))
+							if !had_error {
+								match self.suggest_opt(*arg) {
+									Some(opt) => {
+										println(fmt!("Unknown option %s, did you mean '%s'?\n\n%s\n",
+										  opt_arg,
+										  opt.long_parsed(),
+										  OptionParser::arg_help_str(opt)))
+									}
+									None => {
+										println(fmt!("Unknown option %s", opt_arg));
+									}
 								}
-								None => {
-									println(fmt!("Unknown option %s", opt_arg));
-								}
+								had_error = true;
 							}
-							result.status = Error;
 						}
 					}
 				}
@@ -234,6 +239,9 @@ impl <'self> OptionParser<'self> {
 			}
 		}
 
+		if had_error {
+			result.status = Error;
+		}
 		result
 	}
 
