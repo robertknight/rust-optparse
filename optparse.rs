@@ -55,12 +55,11 @@ pub struct ParseResult {
 	args : ~[~str]
 }
 
-// word-wraps a string to fit 'cols' columns.  The first line starts at
-// column index 'first_line_col' and subsequent new lines start at
+// word-wraps a string to fit 'cols' columns.  Lines start at column
 // 'start_col'
-fn word_wrap_str(s: &str, first_line_col : uint, start_col : uint, cols : uint) -> ~str {
+fn word_wrap_str(s: &str, start_col : uint, cols : uint) -> ~str {
 	let mut wrapped = ~"";
-	let mut line_spaces_left = cols - first_line_col;
+	let mut line_spaces_left = cols - start_col;
 	let mut first_in_line = true;
 
 	for s.word_iter().advance() |word| {
@@ -231,12 +230,20 @@ impl <'self> OptionParser<'self> {
 		};
 		
 		let DESCRIPTION_COL = 26;
-		while help_str.len() < DESCRIPTION_COL {
+		let first_line_len;
+
+		if help_str.len() < DESCRIPTION_COL {
+			first_line_len = help_str.len();
+		} else {
+			help_str.push_char('\n');
+			first_line_len = 0;
+		}
+
+		for std::uint::range(first_line_len, DESCRIPTION_COL) |_| {
 			help_str.push_char(' ');
 		}
-		
-		help_str += word_wrap_str(opt.description, help_str.len(), DESCRIPTION_COL, 80);
-		help_str
+
+		help_str + word_wrap_str(opt.description, DESCRIPTION_COL, 80)
 	}
 
 	fn format_help_str(&self) -> ~str {
@@ -245,7 +252,7 @@ impl <'self> OptionParser<'self> {
 			OptionParser::arg_help_str(*opt)
 		}).connect("\n");
 
-		let banner : &str = word_wrap_str(self.banner, 0, 0, 80);
+		let banner : &str = word_wrap_str(self.banner, 0, 80);
 		let sections = [usage_str, banner, opt_list];
 		sections.connect("\n\n").append("\n")
 	}
