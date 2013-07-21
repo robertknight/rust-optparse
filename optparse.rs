@@ -1,3 +1,4 @@
+extern mod extra;
 extern mod std;
 
 use std::os;
@@ -258,12 +259,27 @@ impl <'self> OptionParser<'self> {
 
 	fn format_help_str(&self) -> ~str {
 		let usage_str : &str = fmt!("Usage: %s %s", os::args()[0], self.usage);
-		let opt_list : &str = self.opts.map(|opt| {
-			OptionParser::arg_help_str(*opt)
-		}).connect("\n");
+
+		struct OptHelpEntry<'self> {
+			help_str : ~str,
+			sort_key : &'self str
+		};
+
+		let mut opt_list = self.opts.map(|opt| {
+			OptHelpEntry {
+				help_str : OptionParser::arg_help_str(*opt),
+				sort_key : opt.long
+			}
+		});
+		extra::sort::quick_sort(opt_list, |a,b| {
+			a.sort_key < b.sort_key
+		});
 
 		let banner : &str = word_wrap_str(self.banner, 0, 80);
-		let sections = [usage_str, banner, opt_list];
+		let opt_section : &str = opt_list.map(|entry| {
+			entry.help_str.clone()
+		}).connect("\n");
+		let sections = [usage_str, banner, opt_section];
 		sections.connect("\n\n").append("\n")
 	}
 
