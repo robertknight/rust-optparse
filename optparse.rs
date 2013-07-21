@@ -196,7 +196,7 @@ impl <'self> OptionParser<'self> {
 							});
 						} else {
 							if opt.has_required_arg() {
-								println(fmt!("Missing required argument for option %s", opt_arg));
+								println(fmt!("Missing required argument for option %s.\n\n%s\n", opt_arg, OptionParser::arg_help_str(*opt)));
 								result.status = Error;
 							} else {
 								result.opts.push(OptMatch {
@@ -212,10 +212,16 @@ impl <'self> OptionParser<'self> {
 							self.print_usage();
 							result.status = Help;
 						} else {
-							println(fmt!("Unknown option %s", opt_arg));
 							match self.suggest_opt(*arg) {
-								Some(opt) => println(fmt!("Did you mean '%s'?", opt.long_parsed())),
-								None => ()
+								Some(opt) => {
+									println(fmt!("Unknown option %s, did you mean '%s'?\n\n%s\n",
+									  opt_arg,
+									  opt.long_parsed(),
+									  OptionParser::arg_help_str(opt)))
+								}
+								None => {
+									println(fmt!("Unknown option %s", opt_arg));
+								}
 							}
 							result.status = Error;
 						}
