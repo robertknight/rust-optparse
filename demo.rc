@@ -9,12 +9,14 @@ fn main() {
 	let opt_with_req_arg = Opt::new("-r", "--required-arg arg", "An option taking a required argument");
 	let long_opt = Opt::new("", "--long-opt", "An option with no short variant");
 	let int_arg = Opt::new("-i", "--int-arg [arg]", "Option that takes an int arg");
+	let multi_value_arg = Opt::new("-m", "--multi-arg [args]", "Option that can be repeated");
 
 	let opt_parser = OptionParser {
 		usage : ~"[<values to print>...]",
 		banner : ~"This is a test app for the OptionParser struct \
 		           with a banner that exceeds 80 chars in length",
-		opts : ~[&simple_opt, &opt_with_opt_arg, &long_opt, &int_arg, &opt_with_req_arg],
+		opts : ~[&simple_opt, &opt_with_opt_arg, &long_opt, &int_arg, &opt_with_req_arg,
+		         &multi_value_arg],
 		tail_banner : Some(~"This is a tail banner that appears below the list of options")
 	};
 	let flags = opt_parser.parse(os::args());
@@ -43,6 +45,11 @@ fn main() {
 	match opt_parser.value(&flags, &opt_with_opt_arg) {
 		Some(v) => println(fmt!("Got option %s", v)),
 		None => ()
+	}
+
+	let multi_opt_values = opt_parser.values(&flags, &multi_value_arg);
+	for multi_opt_values.iter().advance() |val| {
+		println(fmt!("Multi-value arg: %s", *val));
 	}
 
 	do opt_parser.with_value(&flags, &int_arg) |val| {

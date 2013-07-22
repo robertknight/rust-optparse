@@ -343,16 +343,25 @@ impl <'self> OptionParser<'self> {
 
 	/// Returns the value for a given option if set or None otherwise
 	pub fn value<'r>(&self, flags : &'r ParseResult, match_opt: &Opt) -> Option<&'r str> {
-		match flags.opts.iter().find_(|opt| {
-			let name : &str = opt.opt_name;
-			name == match_opt.long_parsed()
-		}) {
-			Some(match_) => {
-				let opt_value : &'r str = match_.val;
-				Some(opt_value)
-			},
-			None => None
+		let matches = self.values(flags, match_opt);
+		if matches.len() > 0 {
+			Some(matches[0])
+		} else {
+			None
 		}
+	}
+
+	/// Returns all of the values for a given option
+	pub fn values<'r>(&self, flags : &'r ParseResult, match_opt: &Opt) -> ~[&'r str] {
+		let mut matches = ~[];
+		for flags.opts.iter().advance() |opt_match| {
+			let name : &str = opt_match.opt_name;
+			if name == match_opt.long_parsed() {
+				let val : &'r str = opt_match.val;
+				matches.push(val);
+			}
+		}
+		matches
 	}
 
 	/// Returns true if a given flag was passed on the command-line
