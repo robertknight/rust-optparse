@@ -169,6 +169,13 @@ impl <'self> OptionParser<'self> {
 			args : ~[]
 		};
 
+		let mut opts : ~[&Opt] = ~[];
+		for self.opts.iter().advance() |opt| {
+			opts.push(*opt);
+		}
+		let help_opt = Opt::help_opt();
+		opts.push(&help_opt);
+
 		let mut had_error = false;
 		let mut skip_next_arg = false;
 		for args.iter().enumerate().advance |(index, arg)| {
@@ -180,7 +187,7 @@ impl <'self> OptionParser<'self> {
 			let mut is_opt = false;
 			do OptionParser::each_opt_in_arg(*arg) |opt_arg| {
 				is_opt = true;
-				let matching_opt = do self.opts.iter().find_ |opt| {
+				let matching_opt = do opts.iter().find_ |opt| {
 					opt.match_arg(opt_arg)
 				};
 				match matching_opt {
@@ -210,25 +217,19 @@ impl <'self> OptionParser<'self> {
 						};
 					},
 					None => {
-						let help_opt = Opt::help_opt();
-						if help_opt.match_arg(opt_arg) {
-							self.print_usage();
-							result.status = Help;
-						} else {
-							if !had_error {
-								match self.suggest_opt(*arg) {
-									Some(opt) => {
-										println(fmt!("Unknown option %s, did you mean '%s'?\n\n%s\n",
-										  opt_arg,
-										  opt.long_parsed(),
-										  OptionParser::arg_help_str(opt)))
-									}
-									None => {
-										println(fmt!("Unknown option %s", opt_arg));
-									}
+						if !had_error {
+							match self.suggest_opt(*arg) {
+								Some(opt) => {
+									println(fmt!("Unknown option %s, did you mean '%s'?\n\n%s\n",
+									  opt_arg,
+									  opt.long_parsed(),
+									  OptionParser::arg_help_str(opt)))
 								}
-								had_error = true;
+								None => {
+									println(fmt!("Unknown option %s", opt_arg));
+								}
 							}
+							had_error = true;
 						}
 					}
 				}
@@ -241,7 +242,14 @@ impl <'self> OptionParser<'self> {
 
 		if had_error {
 			result.status = Error;
+		} else {
+			// handle built-in options
+			if self.is_set(&result, &help_opt) {
+				self.print_usage();
+				result.status = Help;
+			}
 		}
+
 		result
 	}
 
