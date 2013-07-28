@@ -235,7 +235,7 @@ impl <'self> OptionParser<'self> {
 			}
 			
 			if !is_opt && index > 0 {
-				result.args.push(copy *arg);
+				result.args.push(arg.clone());
 			}
 		}
 
