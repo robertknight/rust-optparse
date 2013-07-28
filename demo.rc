@@ -4,6 +4,7 @@ use optparse::*;
 mod optparse;
 
 fn main() {
+	// first, define the options that the command supports
 	let simple_opt = Opt::new("-o", "--opt", "A simple option");
 	let opt_with_opt_arg = Opt::new("-a", "--opt-with-arg [arg]", "An option taking an optional argument");
 	let opt_with_req_arg = Opt::new("-r", "--required-arg arg", "An option taking a required argument");
@@ -11,14 +12,17 @@ fn main() {
 	let int_arg = Opt::new("-i", "--int-arg [arg]", "Option that takes an int arg");
 	let multi_value_arg = Opt::new("-m", "--multi-arg [args]", "Option that can be repeated");
 
+	// specify the syntax, banner and options for the command
 	let opt_parser = OptionParser {
 		usage : ~"[<values to print>...]",
-		banner : ~"This is a test app for the OptionParser struct \
-		           with a banner that exceeds 80 chars in length",
+		banner : ~"This is an example app for the optparser module. \
+		           The banner is a short summary which appears at the top of
+		           --help output",
 		opts : ~[&simple_opt, &opt_with_opt_arg, &long_opt, &int_arg, &opt_with_req_arg,
 		         &multi_value_arg],
 		tail_banner : Some(~"This is a tail banner that appears below the list of options")
 	};
+
 	let flags = opt_parser.parse(os::args());
 
 	match flags.status {
@@ -30,6 +34,7 @@ fn main() {
 		_ => ()
 	}
 
+	// handle options
 	if opt_parser.is_set(&flags, &simple_opt) {
 		println("An option with no args was used");
 	}
@@ -43,7 +48,7 @@ fn main() {
 	}
 
 	match opt_parser.value(&flags, &opt_with_opt_arg) {
-		Some(v) => println(fmt!("Got option %s", v)),
+		Some(v) => println(fmt!("An option with an optional arg %s was used", v)),
 		None => ()
 	}
 
@@ -55,12 +60,13 @@ fn main() {
 	do opt_parser.with_value(&flags, &int_arg) |val| {
 		match std::int::from_str(val) {
 			Some(int_val) =>
-				println(fmt!("Int option %d was used", int_val)),
+				println(fmt!("An option which expects an int arg was used: %d", int_val)),
 			None =>
-				println(fmt!("%s expects a number", int_arg.long))
+				println(fmt!("%s expects a numeric arg", int_arg.long))
 		}
 	}
 
+	// handle remaining args
 	for flags.args.iter().enumerate().advance |(i,arg)| {
 		println(fmt!("Non-option argument #%u: %s", i, *arg));
 	}
