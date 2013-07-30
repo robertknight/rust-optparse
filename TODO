@@ -1,0 +1,26 @@
+Required:
+
+- Support '--opt=ARG' syntax
+- Support grouping options in --help output
+- Support per-group banners in --help output
+- Support '--' terminator for flag parsing
+- Tests for:
+-- Short opt parsing
+-- Long opt parsing
+-- Opt with arg parsing (optional, required, =ARG syntax)
+-- '--' terminator
+-- '--help' output
+-- Overriding default '-h' arg
+- Intro docs
+
+Nice to have?
+- Positional args (see http://www.boost.org/doc/libs/1_54_0/doc/html/program_options/tutorial.html)
+- Args hidden from --help output
+- Support for --version output
+
+For comparison:
+
+- Boost Program Options: http://www.boost.org/doc/libs/1_54_0/doc/html/program_options/tutorial.html
+- Ruby OptionParser: http://ruby-doc.org/stdlib-2.0/libdoc/optparse/rdoc/OptionParser.html
+- Go flag package: http://golang.org/pkg/flag/
+- libc getopt: http://www.gnu.org/software/libc/manual/html_node/Getopt.html
