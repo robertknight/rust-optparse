@@ -6,11 +6,11 @@ mod optparse;
 fn main() {
 	// first, define the options that the command supports
 	let simple_opt = Opt::new("-o", "--opt", "A simple option");
-	let opt_with_opt_arg = Opt::new("-a", "--opt-with-arg [arg]", "An option taking an optional argument");
-	let opt_with_req_arg = Opt::new("-r", "--required-arg arg", "An option taking a required argument");
+	let opt_with_opt_arg = Opt::new("-a", "--opt-with-arg [ARG]", "An option taking an optional argument");
+	let opt_with_req_arg = Opt::new("-r", "--required-arg ARG", "An option taking a required argument");
 	let long_opt = Opt::new("", "--long-opt", "An option with no short variant");
-	let int_arg = Opt::new("-i", "--int-arg [arg]", "Option that takes an int arg");
-	let multi_value_arg = Opt::new("-m", "--multi-arg [args]", "Option that can be repeated");
+	let int_arg = Opt::new("-i", "--int-arg [ARG]", "Option that takes an int arg");
+	let multi_value_arg = Opt::new("-m", "--multi-arg [ARGS]", "Option that can be repeated");
 
 	// specify the syntax, banner and options for the command
 	let opt_parser = OptionParser {
@@ -53,7 +53,7 @@ fn main() {
 	}
 
 	let multi_opt_values = opt_parser.values(&flags, &multi_value_arg);
-	for multi_opt_values.iter().advance() |val| {
+	for val in multi_opt_values.iter() {
 		println(fmt!("Multi-value arg: %s", *val));
 	}
 
@@ -67,7 +67,7 @@ fn main() {
 	}
 
 	// handle remaining args
-	for flags.args.iter().enumerate().advance |(i,arg)| {
+	for (i, arg) in flags.args.iter().enumerate() {
 		println(fmt!("Non-option argument #%u: %s", i, *arg));
 	}
 }

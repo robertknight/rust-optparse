@@ -65,10 +65,10 @@ fn word_wrap_str(s: &str, start_col : uint, cols : uint) -> ~str {
 	let mut line_spaces_left = cols - start_col;
 	let mut first_in_line = true;
 
-	for s.word_iter().advance() |word| {
+	for word in s.word_iter() {
 		if line_spaces_left < word.len() {
 			wrapped.push_char('\n');
-			for std::uint::range(0, start_col) |_| {
+			for _ in range(0, start_col) {
 				wrapped.push_char(' ');
 			}
 			line_spaces_left = cols - start_col;
@@ -123,11 +123,20 @@ impl Opt {
 	}
 
 	/// Returns an Opt struct for the '--help' option
-	fn help_opt() -> Opt {
+	pub fn help_opt() -> Opt {
 		Opt {
 			short : ~"-h",
 			long : ~"--help",
-			description : ~"Print usage information"
+			description : ~"Display usage information"
+		}
+	}
+
+	/// Returns an Opt struct for a --version flag
+	pub fn version_opt() -> Opt {
+		Opt {
+			short : ~"-v",
+			long : ~"--version",
+			description : ~"Display version information"
 		}
 	}
 
@@ -143,13 +152,24 @@ impl Opt {
 }
 
 impl <'self> OptionParser<'self> {
+
+	/// Creates a new OptionParser 
+	pub fn new<'a>(usage:&str, banner:&str, opts:&[&'a Opt]) -> OptionParser<'a> {
+		OptionParser {
+			usage : usage.to_owned(),
+			banner : banner.to_owned(),
+			opts : opts.to_owned(),
+			tail_banner : None
+		}
+	}
+
 	// iterates over each flag in a command-line argument
-	fn each_opt_in_arg(arg : &str, callback : &fn(&str)) {
+	fn each_opt_in_arg(arg : &str, f : &fn(&str)) {
 		if arg.starts_with("--") {
-			callback(arg);
+			f(arg);
 		} else if (arg.starts_with("-")) {
-			for arg.slice_from(1).iter().advance() |c| {
-				callback(fmt!("-%c", c));
+			for c in arg.slice_from(1).iter() {
+				f(fmt!("-%c", c));
 			}
 		}
 	}
@@ -170,7 +190,7 @@ impl <'self> OptionParser<'self> {
 		};
 
 		let mut opts : ~[&Opt] = ~[];
-		for self.opts.iter().advance() |opt| {
+		for opt in self.opts.iter() {
 			opts.push(*opt);
 		}
 		let help_opt = Opt::help_opt();
@@ -178,7 +198,7 @@ impl <'self> OptionParser<'self> {
 
 		let mut had_error = false;
 		let mut skip_next_arg = false;
-		for args.iter().enumerate().advance |(index, arg)| {
+		for (index, arg) in args.iter().enumerate() {
 			if skip_next_arg {
 				skip_next_arg = false;
 				loop
@@ -255,7 +275,7 @@ impl <'self> OptionParser<'self> {
 
 	/// Prints usage information for the command-line options.
 	/// This has the same effect as passing the -h flag
-	fn print_usage(&self) {
+	pub fn print_usage(&self) {
 		println(self.format_help_str());
 	}
 
@@ -276,14 +296,16 @@ impl <'self> OptionParser<'self> {
 			first_line_len = 0;
 		}
 
-		for std::uint::range(first_line_len, DESCRIPTION_COL) |_| {
+		for _ in range(first_line_len, DESCRIPTION_COL) {
 			help_str.push_char(' ');
 		}
 
 		help_str + word_wrap_str(opt.description, DESCRIPTION_COL, 80)
 	}
 
-	fn format_help_str(&self) -> ~str {
+	/// Returns a string containing the --help output
+	/// for the current set of arguments
+	pub fn format_help_str(&self) -> ~str {
 		let usage_str : &str = fmt!("Usage: %s %s", os::args()[0], self.usage);
 
 		struct OptHelpEntry<'self> {
@@ -323,7 +345,7 @@ impl <'self> OptionParser<'self> {
 	fn suggest_opt<'a>(&'a self, input : &str) -> Option<&'a Opt> {
 		let mut min_edit_dist = std::uint::max_value;
 		let mut suggested_opt : Option<&'a Opt> = None;
-		for self.opts.iter().advance |opt| {
+		for opt in self.opts.iter() {
 			let edit_dist = opt.long_parsed().lev_distance(input);
 			if edit_dist < min_edit_dist {
 				min_edit_dist = edit_dist;
@@ -362,7 +384,7 @@ impl <'self> OptionParser<'self> {
 	/// Returns all of the values for a given option
 	pub fn values<'r>(&self, flags : &'r ParseResult, match_opt: &Opt) -> ~[&'r str] {
 		let mut matches = ~[];
-		for flags.opts.iter().advance() |opt_match| {
+		for opt_match in flags.opts.iter() {
 			let name : &str = opt_match.opt_name;
 			if name == match_opt.long_parsed() {
 				let val : &'r str = opt_match.val;
