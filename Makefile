@@ -1,2 +1,2 @@
 parse: *.rc *.rs
-	rust build demo.rc
+	rustc demo.rc

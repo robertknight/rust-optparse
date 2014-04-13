@@ -1,7 +1,6 @@
-extern mod extra;
-extern mod std;
-
 use std::os;
+use std::io::stdio::print;
+use std::num::Bounded;
 
 /// Represents a command-line flag
 pub struct Opt {
@@ -17,7 +16,7 @@ pub struct Opt {
 
 /// Parser for processing command-line arguments and displaying
 /// usage information
-pub struct OptionParser<'self> {
+pub struct OptionParser<'a> {
 	/// A one line usage summary to be displayed by -h.
 	/// The output format is '<program name> <usage>'
 	usage: ~str,
@@ -26,7 +25,7 @@ pub struct OptionParser<'self> {
 	/// and before the list of options
 	banner: ~str,
 	/// Vector of accepted option flags
-	opts: ~[&'self Opt],
+	opts: ~[&'a Opt],
 	/// A banner that is displayed below the list
 	/// of options
 	tail_banner : Option<~str>
@@ -65,7 +64,7 @@ fn word_wrap_str(s: &str, start_col : uint, cols : uint) -> ~str {
 	let mut line_spaces_left = cols - start_col;
 	let mut first_in_line = true;
 
-	for word in s.word_iter() {
+	for word in s.words() {
 		if line_spaces_left < word.len() {
 			wrapped.push_char('\n');
 			for _ in range(0, start_col) {
@@ -100,7 +99,7 @@ impl Opt {
 	/// argument (eg. if self.long == '--option [arg]', this
 	/// returns '--option')
 	fn long_parsed<'r>(&'r self) -> &'r str {
-		self.long.split_iter(' ').take_(1).next().get()
+		self.long.split(' ').take(1).next().unwrap()
 	}
 
 	/// Constructs a new option with the given syntax.
@@ -151,7 +150,7 @@ impl Opt {
 	}
 }
 
-impl <'self> OptionParser<'self> {
+impl <'a> OptionParser<'a> {
 
 	/// Creates a new OptionParser 
 	pub fn new<'a>(usage:&str, banner:&str, opts:&[&'a Opt]) -> OptionParser<'a> {
@@ -169,7 +168,7 @@ impl <'self> OptionParser<'self> {
 			f(arg);
 		} else if (arg.starts_with("-")) {
 			for c in arg.slice_from(1).iter() {
-				f(fmt!("-%c", c));
+				f(format!("-{}", c));
 			}
 		}
 	}
@@ -201,13 +200,13 @@ impl <'self> OptionParser<'self> {
 		for (index, arg) in args.iter().enumerate() {
 			if skip_next_arg {
 				skip_next_arg = false;
-				loop
+				continue
 			}
 
 			let mut is_opt = false;
-			do OptionParser::each_opt_in_arg(*arg) |opt_arg| {
+			for opt_arg in OptionParser::each_opt_in_arg(*arg) {
 				is_opt = true;
-				let matching_opt = do opts.iter().find_ |opt| {
+				let matching_opt = for opt in opts.iter().find_ {
 					opt.match_arg(opt_arg)
 				};
 				match matching_opt {
@@ -225,7 +224,7 @@ impl <'self> OptionParser<'self> {
 						} else {
 							if opt.has_required_arg() {
 								if !had_error {
-									println(fmt!("Missing required argument for option %s.\n\n%s\n", opt_arg, OptionParser::arg_help_str(*opt)));
+									println!("Missing required argument for option {}.\n\n{}\n", opt_arg, OptionParser::arg_help_str(*opt));
 									had_error = true;
 								}
 							} else {
@@ -240,13 +239,13 @@ impl <'self> OptionParser<'self> {
 						if !had_error {
 							match self.suggest_opt(*arg) {
 								Some(opt) => {
-									println(fmt!("Unknown option %s, did you mean '%s'?\n\n%s\n",
+									println!("Unknown option {}, did you mean '{}'?\n\n{}\n",
 									  opt_arg,
 									  opt.long_parsed(),
-									  OptionParser::arg_help_str(opt)))
+									  OptionParser::arg_help_str(opt))
 								}
 								None => {
-									println(fmt!("Unknown option %s", opt_arg));
+									println!("Unknown option {}", opt_arg);
 								}
 							}
 							had_error = true;
@@ -276,14 +275,14 @@ impl <'self> OptionParser<'self> {
 	/// Prints usage information for the command-line options.
 	/// This has the same effect as passing the -h flag
 	pub fn print_usage(&self) {
-		println(self.format_help_str());
+		print(self.format_help_str());
 	}
 
 	fn arg_help_str(opt: &Opt) -> ~str {
 		let mut help_str = if opt.short.len() > 0 {
-			fmt!("  %s, %s", opt.short, opt.long)
+			format!("  {}, {}", opt.short, opt.long)
 		} else {
-			fmt!("      %s", opt.long)
+			format!("      {}", opt.long)
 		};
 		
 		let DESCRIPTION_COL = 26;
@@ -306,11 +305,11 @@ impl <'self> OptionParser<'self> {
 	/// Returns a string containing the --help output
 	/// for the current set of arguments
 	pub fn format_help_str(&self) -> ~str {
-		let usage_str : &str = fmt!("Usage: %s %s", os::args()[0], self.usage);
+		let usage_str : &str = format!("Usage: {} {}", os::args()[0], self.usage);
 
-		struct OptHelpEntry<'self> {
+		struct OptHelpEntry<'a> {
 			help_str : ~str,
-			sort_key : &'self str
+			sort_key : &'a str
 		};
 
 		let mut opt_list = self.opts.map(|opt| {
@@ -319,7 +318,7 @@ impl <'self> OptionParser<'self> {
 				sort_key : opt.long
 			}
 		});
-		extra::sort::quick_sort(opt_list, |a,b| {
+		opt_list.sort_by(|a,b| {
 			a.sort_key < b.sort_key
 		});
 
@@ -334,7 +333,7 @@ impl <'self> OptionParser<'self> {
 				let tail : &str = *_tail;
 				sections.push(tail)
 			}
-			None() => ()
+			None => ()
 		}
 
 		sections.connect("\n\n").append("\n")
@@ -343,7 +342,7 @@ impl <'self> OptionParser<'self> {
 	// for a given input argument string, returns the registered
 	// option with the closest spelling
 	fn suggest_opt<'a>(&'a self, input : &str) -> Option<&'a Opt> {
-		let mut min_edit_dist = std::uint::max_value;
+		let mut min_edit_dist : uint = Bounded::max_value();
 		let mut suggested_opt : Option<&'a Opt> = None;
 		for opt in self.opts.iter() {
 			let edit_dist = opt.long_parsed().lev_distance(input);
@@ -356,7 +355,7 @@ impl <'self> OptionParser<'self> {
 	}
 
 	fn is_valid_opt(&self, name : &str) -> bool {
-		let opt = do self.opts.iter().find_ |opt| {
+		let opt = for opt in self.opts.iter().find_ {
 			let opt_name : &str = opt.long_parsed();
 			opt_name == name
 		};

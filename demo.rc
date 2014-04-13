@@ -1,5 +1,5 @@
 use std::os;
-use optparse::*;
+use optparse::{Opt, OptionParser};
 
 mod optparse;
 
@@ -36,38 +36,38 @@ fn main() {
 
 	// handle options
 	if opt_parser.is_set(&flags, &simple_opt) {
-		println("An option with no args was used");
+		println!("An option with no args was used");
 	}
 
-	do opt_parser.with_value(&flags, &opt_with_opt_arg) |val| {
-		println(fmt!("An option with optional arg %s was used", val));
+	for val in opt_parser.with_value(&flags, &opt_with_opt_arg) {
+		println!("An option with optional arg {} was used", val);
 	}
 
-	do opt_parser.with_value(&flags, &opt_with_req_arg) |val| {
-		println(fmt!("An option with required arg %s was used", val));
+	for val in opt_parser.with_value(&flags, &opt_with_req_arg) {
+		println!("An option with required arg {} was used", val);
 	}
 
 	match opt_parser.value(&flags, &opt_with_opt_arg) {
-		Some(v) => println(fmt!("An option with an optional arg %s was used", v)),
+		Some(v) => println!("An option with an optional arg {} was used", v),
 		None => ()
 	}
 
 	let multi_opt_values = opt_parser.values(&flags, &multi_value_arg);
 	for val in multi_opt_values.iter() {
-		println(fmt!("Multi-value arg: %s", *val));
+		println!("Multi-value arg: {}", *val);
 	}
 
-	do opt_parser.with_value(&flags, &int_arg) |val| {
-		match std::int::from_str(val) {
+	for val in opt_parser.with_value(&flags, &int_arg) {
+		match from_str(val) {
 			Some(int_val) =>
-				println(fmt!("An option which expects an int arg was used: %d", int_val)),
+				println!("An option which expects an int arg was used: {}", int_val),
 			None =>
-				println(fmt!("%s expects a numeric arg", int_arg.long))
+				println!("{} expects a numeric arg", int_arg.long)
 		}
 	}
 
 	// handle remaining args
 	for (i, arg) in flags.args.iter().enumerate() {
-		println(fmt!("Non-option argument #%u: %s", i, *arg));
+		println!("Non-option argument {}: {}", i, *arg);
 	}
 }
