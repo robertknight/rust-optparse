@@ -52,9 +52,9 @@ pub enum ParseStatus {
 /// storing information about matching command-line flags and
 /// the list of non-flag arguments on the command-line
 pub struct ParseResult {
-	opts : ~[OptMatch],
+	opts : Vec<OptMatch>,
 	status : ParseStatus,
-	args : ~[~str]
+	args : Vec<~str>
 }
 
 // word-wraps a string to fit 'cols' columns.  Lines start at column
@@ -152,7 +152,7 @@ impl Opt {
 
 impl <'a> OptionParser<'a> {
 
-	/// Creates a new OptionParser 
+	/// Creates a new OptionParser
 	pub fn new<'a>(usage:&str, banner:&str, opts:&[&'a Opt]) -> OptionParser<'a> {
 		OptionParser {
 			usage : usage.to_owned(),
@@ -183,12 +183,12 @@ impl <'a> OptionParser<'a> {
 	/// is_set(), value() or with_value() on the result.
 	pub fn parse(&self, args: ~[~str]) -> ParseResult {
 		let mut result = ParseResult {
-			opts : ~[],
+			opts : Vec::new(),
 			status : Success,
-			args : ~[]
+			args : Vec::new()
 		};
 
-		let mut opts : ~[&Opt] = ~[];
+		let mut opts : Vec<&Opt> = vec!();
 		for opt in self.opts.iter() {
 			opts.push(*opt);
 		}
@@ -253,7 +253,7 @@ impl <'a> OptionParser<'a> {
 					}
 				}
 			}
-			
+
 			if !is_opt && index > 0 {
 				result.args.push(arg.clone());
 			}
@@ -284,7 +284,7 @@ impl <'a> OptionParser<'a> {
 		} else {
 			format!("      {}", opt.long)
 		};
-		
+
 		let DESCRIPTION_COL = 26;
 		let first_line_len;
 
@@ -401,5 +401,3 @@ impl <'a> OptionParser<'a> {
 		}
 	}
 }
-
-
