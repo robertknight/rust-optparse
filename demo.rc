@@ -48,6 +48,10 @@ fn main() {
 		println!("An option with required arg {} was used", val);
 	});
 
+	if opt_parser.is_set(&flags, &long_opt) {
+		println!("An option with only the long opt form was used");
+	}
+
 	match opt_parser.value(&flags, &opt_with_opt_arg) {
 		Some(v) => println!("An option with an optional arg {} was used", v),
 		None => ()
@@ -67,6 +71,8 @@ fn main() {
 				println!("{} expects a numeric arg", int_arg.long)
 		}
 	});
+
+
 
 	// handle remaining args
 	for (i, arg) in flags.args.iter().enumerate() {
