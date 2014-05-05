@@ -32,7 +32,9 @@ pub struct OptionParser<'a> {
 	pub tail_banner : Option<~str>
 }
 
-struct OptMatch {
+/// Holds the option name and value of a matched command-line
+/// option
+pub struct OptMatch {
 	opt_name : ~str,
 	val : ~str
 }
