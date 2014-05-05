@@ -60,7 +60,7 @@ pub struct ParseResult {
 // word-wraps a string to fit 'cols' columns.  Lines start at column
 // 'start_col'
 fn word_wrap_str(s: &str, start_col : uint, cols : uint) -> ~str {
-	let mut wrapped = ~"";
+	let mut wrapped = StrBuf::new();
 	let mut line_spaces_left = cols - start_col;
 	let mut first_in_line = true;
 
@@ -84,7 +84,7 @@ fn word_wrap_str(s: &str, start_col : uint, cols : uint) -> ~str {
 		wrapped.push_str(word);
 	}
 
-	wrapped
+	wrapped.into_owned()
 }
 
 impl Opt {
