@@ -1,7 +1,7 @@
 LIB_SRCS=*.rs
 
-demo: *.rc $(LIB_SRCS)
-	rustc demo.rc
+demo: demo.rs $(LIB_SRCS)
+	rustc demo.rs
 
 doc: $(LIB_SRCS)
 	rustdoc lib.rs

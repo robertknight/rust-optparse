@@ -76,8 +76,6 @@ fn main() {
 		}
 	});
 
-
-
 	// handle remaining args
 	for (i, arg) in flags.args.iter().enumerate() {
 		println!("Non-option argument {}: {}", i, *arg);
