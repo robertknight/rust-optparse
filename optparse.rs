@@ -1,17 +1,18 @@
 use std::os;
 use std::io::stdio::print;
 use std::num::Bounded;
+use std::strbuf::StrBuf;
 
 /// Represents a command-line flag
 pub struct Opt {
 	/// Short version of argument, consisting of a '-' followed
 	/// by a single letter
-	short: ~str,
+	pub short: ~str,
 	/// Long version of argument, consisting of '--' followed by
 	/// one or more letters
-	long: ~str,
+	pub long: ~str,
 	/// A brief description of the option
-	description: ~str
+	pub description: ~str
 }
 
 /// Parser for processing command-line arguments and displaying
@@ -19,16 +20,16 @@ pub struct Opt {
 pub struct OptionParser<'a> {
 	/// A one line usage summary to be displayed by -h.
 	/// The output format is '<program name> <usage>'
-	usage: ~str,
+	pub usage: ~str,
 	/// A short summary of what the command does,
 	/// displayed underneath the 'usage' string by -h
 	/// and before the list of options
-	banner: ~str,
+	pub banner: ~str,
 	/// Vector of accepted option flags
-	opts: ~[&'a Opt],
+	pub opts: ~[&'a Opt],
 	/// A banner that is displayed below the list
 	/// of options
-	tail_banner : Option<~str>
+	pub tail_banner : Option<~str>
 }
 
 struct OptMatch {
@@ -52,9 +53,9 @@ pub enum ParseStatus {
 /// storing information about matching command-line flags and
 /// the list of non-flag arguments on the command-line
 pub struct ParseResult {
-	opts : Vec<OptMatch>,
-	status : ParseStatus,
-	args : Vec<~str>
+	pub opts : Vec<OptMatch>,
+	pub status : ParseStatus,
+	pub args : Vec<~str>
 }
 
 // word-wraps a string to fit 'cols' columns.  Lines start at column
@@ -89,10 +90,10 @@ fn word_wrap_str(s: &str, start_col : uint, cols : uint) -> ~str {
 
 impl Opt {
 	/// Returns true if a given argument string
-	/// (either in the form '-o' or '--option') matches
+	/// (either in the form 'o' or '--option') matches
 	/// this option.
 	fn match_arg(&self, arg : &str) -> bool {
-		arg == self.short || arg == self.long_parsed()
+		(self.short.len() > 1 && arg == self.short.slice_from(1)) || arg == self.long_parsed()
 	}
 
 	/// Returns the long form of this option, minus any
@@ -124,18 +125,18 @@ impl Opt {
 	/// Returns an Opt struct for the '--help' option
 	pub fn help_opt() -> Opt {
 		Opt {
-			short : ~"-h",
-			long : ~"--help",
-			description : ~"Display usage information"
+			short : "-h".to_owned(),
+			long : "--help".to_owned(),
+			description : "Display usage information".to_owned()
 		}
 	}
 
 	/// Returns an Opt struct for a --version flag
 	pub fn version_opt() -> Opt {
 		Opt {
-			short : ~"-v",
-			long : ~"--version",
-			description : ~"Display version information"
+			short : "-v".to_owned(),
+			long : "--version".to_owned(),
+			description : "Display version information".to_owned()
 		}
 	}
 
@@ -162,15 +163,17 @@ impl <'a> OptionParser<'a> {
 		}
 	}
 
-	// iterates over each flag in a command-line argument
-	fn each_opt_in_arg(arg : &str, f : &fn(&str)) {
+	/// Returns a list of option flags in a command-line argument
+	fn opts_in_arg(arg : &'a str) -> Vec<&'a str> {
+		let mut opts = Vec::new();
 		if arg.starts_with("--") {
-			f(arg);
-		} else if (arg.starts_with("-")) {
-			for c in arg.slice_from(1).chars() {
-				f(format!("-{}", c));
+			opts.push(arg);
+		} else if arg.starts_with("-") {
+			for i in range(1, arg.len()) {
+				opts.push(arg.slice(i, i+1));
 			}
 		}
+		opts
 	}
 
 	/// Parse a list of command-line arguments,
@@ -204,11 +207,11 @@ impl <'a> OptionParser<'a> {
 			}
 
 			let mut is_opt = false;
-			for opt_arg in OptionParser::each_opt_in_arg(*arg) {
+			for opt_arg in OptionParser::opts_in_arg(*arg).iter() {
 				is_opt = true;
-				let matching_opt = for opt in opts.iter().find_ {
-					opt.match_arg(opt_arg)
-				};
+				let matching_opt = opts.iter().find(|opt| {
+					opt.match_arg(*opt_arg)
+				});
 				match matching_opt {
 					Some(opt) => {
 						let has_arg =
@@ -230,7 +233,7 @@ impl <'a> OptionParser<'a> {
 							} else {
 								result.opts.push(OptMatch {
 									opt_name : opt.long_parsed().to_owned(),
-									val : ~""
+									val : "".to_owned()
 								});
 							}
 						};
@@ -280,26 +283,27 @@ impl <'a> OptionParser<'a> {
 
 	fn arg_help_str(opt: &Opt) -> ~str {
 		let mut help_str = if opt.short.len() > 0 {
-			format!("  {}, {}", opt.short, opt.long)
+			StrBuf::from_owned_str(format!("  {}, {}", opt.short, opt.long))
 		} else {
-			format!("      {}", opt.long)
+			StrBuf::from_owned_str(format!("      {}", opt.long))
 		};
 
-		let DESCRIPTION_COL = 26;
+		let description_col = 26;
 		let first_line_len;
 
-		if help_str.len() < DESCRIPTION_COL {
+		if help_str.len() < description_col {
 			first_line_len = help_str.len();
 		} else {
-			help_str.push_char('\n');
+			help_str.push_str("\n");
 			first_line_len = 0;
 		}
 
-		for _ in range(first_line_len, DESCRIPTION_COL) {
-			help_str.push_char(' ');
+		for _ in range(first_line_len, description_col) {
+			help_str.push_str(" ");
 		}
 
-		help_str + word_wrap_str(opt.description, DESCRIPTION_COL, 80)
+		help_str.push_str(word_wrap_str(opt.description, description_col, 80));
+		help_str.into_owned()
 	}
 
 	/// Returns a string containing the --help output
@@ -312,21 +316,22 @@ impl <'a> OptionParser<'a> {
 			sort_key : &'a str
 		};
 
-		let mut opt_list = self.opts.map(|opt| {
+		let mut opt_list : Vec<OptHelpEntry> = self.opts.iter().map(|opt| {
 			OptHelpEntry {
 				help_str : OptionParser::arg_help_str(*opt),
 				sort_key : opt.long
 			}
-		});
+		}).collect();
 		opt_list.sort_by(|a,b| {
-			a.sort_key < b.sort_key
+			a.sort_key.cmp(&b.sort_key)
 		});
 
 		let banner : &str = word_wrap_str(self.banner, 0, 80);
-		let opt_section : &str = opt_list.map(|entry| {
+		let opt_help_list : Vec<~str> = opt_list.iter().map(|entry| {
 			entry.help_str.clone()
-		}).connect("\n");
-		let mut sections = ~[usage_str, banner, opt_section];
+		}).collect();
+		let opt_help_text : &str = opt_help_list.connect("\n");
+		let mut sections = vec!(usage_str, banner, opt_help_text);
 
 		match self.tail_banner {
 			Some(ref _tail) => {
@@ -354,16 +359,8 @@ impl <'a> OptionParser<'a> {
 		suggested_opt
 	}
 
-	fn is_valid_opt(&self, name : &str) -> bool {
-		let opt = for opt in self.opts.iter().find_ {
-			let opt_name : &str = opt.long_parsed();
-			opt_name == name
-		};
-		opt.is_some()
-	}
-
 	/// Invokes action() with the value of a given option if it was set
-	pub fn with_value(&self, flags : &ParseResult, opt: &Opt, action : &fn(&str)) {
+	pub fn with_value(&self, flags : &ParseResult, opt: &Opt, action : |&str|) {
 		match self.value(flags, opt) {
 			Some(value) => action(value),
 			None => ()
@@ -382,7 +379,7 @@ impl <'a> OptionParser<'a> {
 
 	/// Returns all of the values for a given option
 	pub fn values<'r>(&self, flags : &'r ParseResult, match_opt: &Opt) -> ~[&'r str] {
-		let mut matches = ~[];
+		let mut matches = Vec::new();
 		for opt_match in flags.opts.iter() {
 			let name : &str = opt_match.opt_name;
 			if name == match_opt.long_parsed() {
@@ -390,7 +387,7 @@ impl <'a> OptionParser<'a> {
 				matches.push(val);
 			}
 		}
-		matches
+		matches.as_slice().to_owned()
 	}
 
 	/// Returns true if a given flag was passed on the command-line
