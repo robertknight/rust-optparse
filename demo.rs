@@ -48,6 +48,14 @@ fn main() {
 		println!("An option with required arg {} was used", val);
 	});
 
+	if opt_parser.is_set(&flags, &long_opt) {
+		println!("An option with only the long opt form was used");
+	}
+
+	if opt_parser.is_set(&flags, &version_opt) {
+		println!("Version opt was used");
+	}
+
 	match opt_parser.value(&flags, &opt_with_opt_arg) {
 		Some(v) => println!("An option with an optional arg {} was used", v),
 		None => ()
