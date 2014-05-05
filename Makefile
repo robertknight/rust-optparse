@@ -1,2 +1,2 @@
-parse: *.rc *.rs
+demo: *.rc *.rs
 	rustc demo.rc
