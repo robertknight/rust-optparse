@@ -167,7 +167,7 @@ impl <'a> OptionParser<'a> {
 		if arg.starts_with("--") {
 			f(arg);
 		} else if (arg.starts_with("-")) {
-			for c in arg.slice_from(1).iter() {
+			for c in arg.slice_from(1).chars() {
 				f(format!("-{}", c));
 			}
 		}
